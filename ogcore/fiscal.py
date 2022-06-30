@@ -1,24 +1,24 @@
-'''
+"""
 ------------------------------------------------------------------------
 
 Fiscal policy functions for unbalanced budgeting. In particular, some
 functions require time-path calculation.
 
 ------------------------------------------------------------------------
-'''
+"""
 
 # Packages
 import numpy as np
 
-'''
+"""
 ------------------------------------------------------------------------
     Functions
 ------------------------------------------------------------------------
-'''
+"""
 
 
 def D_G_path(r_gov, dg_fixed_values, p):
-    r'''
+    r"""
     Calculate the time paths of debt and government spending
 
     .. math::
@@ -57,9 +57,17 @@ def D_G_path(r_gov, dg_fixed_values, p):
                 time path
             * new_borrowing_f: new borrowing from foreigners
 
-    '''
-    (Y, total_tax_revenue, agg_pension_outlays, UBI_outlays, TR, Gbaseline,
-        D0_baseline) = dg_fixed_values
+    """
+    (
+        Y,
+        total_tax_revenue,
+        agg_pension_outlays,
+        UBI_outlays,
+        TR,
+        I_g,
+        Gbaseline,
+        D0_baseline,
+    ) = dg_fixed_values
 
     growth = (1 + p.g_n) * np.exp(p.g_y)
 
@@ -70,13 +78,13 @@ def D_G_path(r_gov, dg_fixed_values, p):
         D[0] = D0_baseline
 
     if p.baseline_spending:
-        G = Gbaseline[:p.T]
+        G = Gbaseline[: p.T]
     else:
-        G = p.alpha_G[:p.T] * Y[:p.T]
+        G = p.alpha_G[: p.T] * Y[: p.T]
 
     if p.budget_balance:
         D = np.zeros(p.T + 1)
-        G = p.alpha_G[:p.T] * Y[:p.T]
+        G = p.alpha_G[: p.T] * Y[: p.T]
         D_f = np.zeros(p.T)
         D_d = np.zeros(p.T)
         new_borrowing = np.zeros(p.T)
@@ -84,65 +92,104 @@ def D_G_path(r_gov, dg_fixed_values, p):
         new_borrowing_f = np.zeros(p.T)
     else:
         t = 1
-        while t < p.T-1:
-            D[t] = (
-                (1 / growth[t]) * ((1 + r_gov[t - 1]) * D[t - 1] +
-                                   G[t - 1] + TR[t - 1] + UBI_outlays[t - 1] +
-                                   agg_pension_outlays[t-1] -
-                                   total_tax_revenue[t - 1]))
+        while t < p.T - 1:
+            D[t] = (1 / growth[t]) * (
+                (1 + r_gov[t - 1]) * D[t - 1]
+                + G[t - 1]
+                + I_g[t - 1]
+                + TR[t - 1]
+                + UBI_outlays[t - 1]
+                + agg_pension_outlays[t - 1]
+                - total_tax_revenue[t - 1]
+            )
             if (t >= p.tG1) and (t < p.tG2):
                 G[t] = (
-                    growth[t + 1] * (p.rho_G * p.debt_ratio_ss * Y[t] +
-                                     (1 - p.rho_G) * D[t]) -
-                    (1 + r_gov[t]) * D[t] + total_tax_revenue[t] -
-                    agg_pension_outlays[t] - TR[t] - UBI_outlays[t])
+                    growth[t + 1]
+                    * (p.rho_G * p.debt_ratio_ss * Y[t] + (1 - p.rho_G) * D[t])
+                    - (1 + r_gov[t]) * D[t]
+                    + total_tax_revenue[t]
+                    - agg_pension_outlays[t]
+                    - I_g[t - 1]
+                    - TR[t]
+                    - UBI_outlays[t]
+                )
             elif t >= p.tG2:
                 G[t] = (
-                    growth[t + 1] * (p.debt_ratio_ss * Y[t]) -
-                    (1 + r_gov[t]) * D[t] + total_tax_revenue[t] -
-                    agg_pension_outlays[t] - TR[t] - UBI_outlays[t])
+                    growth[t + 1] * (p.debt_ratio_ss * Y[t])
+                    - (1 + r_gov[t]) * D[t]
+                    + total_tax_revenue[t]
+                    - agg_pension_outlays[t]
+                    - I_g[t - 1]
+                    - TR[t]
+                    - UBI_outlays[t]
+                )
             t += 1
 
         # in final period, growth rate has stabilized, so we can replace
         # growth[t+1] with growth[t]
         t = p.T - 1
-        D[t] = (
-            (1 / growth[t]) * ((1 + r_gov[t - 1]) * D[t - 1] + G[t - 1]
-                               + TR[t - 1] + UBI_outlays[t - 1] +
-                               agg_pension_outlays[t-1] -
-                               total_tax_revenue[t - 1]))
+        D[t] = (1 / growth[t]) * (
+            (1 + r_gov[t - 1]) * D[t - 1]
+            + G[t - 1]
+            + I_g[t - 1]
+            + TR[t - 1]
+            + UBI_outlays[t - 1]
+            + agg_pension_outlays[t - 1]
+            - total_tax_revenue[t - 1]
+        )
         G[t] = (
-            growth[t] * (p.debt_ratio_ss * Y[t]) - (1 + r_gov[t]) * D[t] +
-            total_tax_revenue[t] - agg_pension_outlays[t] - TR[t] -
-            UBI_outlays[t])
-        D[t + 1] = (
-            (1 / growth[t + 1]) * ((1 + r_gov[t]) * D[t] + G[t] + TR[t] +
-                                   UBI_outlays[t] + agg_pension_outlays[t] -
-                                   total_tax_revenue[t]))
-        D_ratio_max = np.amax(D[:p.T] / Y[:p.T])
-        print('Maximum debt ratio: ', D_ratio_max)
+            growth[t] * (p.debt_ratio_ss * Y[t])
+            - (1 + r_gov[t]) * D[t]
+            + total_tax_revenue[t]
+            - agg_pension_outlays[t]
+            - I_g[t - 1]
+            - TR[t]
+            - UBI_outlays[t]
+        )
+        D[t + 1] = (1 / growth[t + 1]) * (
+            (1 + r_gov[t]) * D[t]
+            + G[t]
+            + I_g[t - 1]
+            + TR[t]
+            + UBI_outlays[t]
+            + agg_pension_outlays[t]
+            - total_tax_revenue[t]
+        )
+        D_ratio_max = np.amax(D[: p.T] / Y[: p.T])
+        print("Maximum debt ratio: ", D_ratio_max)
 
         # Find foreign and domestic debt holding
         # Fix initial amount of foreign debt holding
         D_f = np.zeros(p.T + 1)
         D_f[0] = p.initial_foreign_debt_ratio * D[0]
         for t in range(0, p.T):
-            D_f[t + 1] = ((D_f[t] / growth[t + 1]) +
-                          (p.zeta_D[t] * (D[t + 1] -
-                                          (D[t] / growth[t + 1]))))
-        D_d = D[:p.T] - D_f[:p.T]
-        new_borrowing = (D[1:p.T + 1] * np.exp(p.g_y) *
-                         (1 + p.g_n[1:p.T + 1]) - D[:p.T])
-        debt_service = r_gov[:p.T] * D[:p.T]
-        new_borrowing_f = (D_f[1:p.T + 1] * np.exp(p.g_y) *
-                           (1 + p.g_n[1:p.T + 1]) - D_f[:p.T])
+            D_f[t + 1] = (D_f[t] / growth[t + 1]) + (
+                p.zeta_D[t] * (D[t + 1] - (D[t] / growth[t + 1]))
+            )
+        D_d = D[: p.T] - D_f[: p.T]
+        new_borrowing = (
+            D[1 : p.T + 1] * np.exp(p.g_y) * (1 + p.g_n[1 : p.T + 1])
+            - D[: p.T]
+        )
+        debt_service = r_gov[: p.T] * D[: p.T]
+        new_borrowing_f = (
+            D_f[1 : p.T + 1] * np.exp(p.g_y) * (1 + p.g_n[1 : p.T + 1])
+            - D_f[: p.T]
+        )
 
-    return (D, G, D_d, D_f[:p.T], new_borrowing, debt_service,
-            new_borrowing_f)
+    return (
+        D,
+        G,
+        D_d,
+        D_f[: p.T],
+        new_borrowing,
+        debt_service,
+        new_borrowing_f,
+    )
 
 
 def get_D_ss(r_gov, Y, p):
-    r'''
+    r"""
     Calculate the steady-state values of government spending and debt
 
     .. math::
@@ -171,7 +218,7 @@ def get_D_ss(r_gov, Y, p):
             * debt_service: steady-state debt service costs
             * new_borrowing_f: steady-state borrowing from foreigners
 
-    '''
+    """
     if p.budget_balance:
         D = 0.0
     else:
@@ -185,14 +232,23 @@ def get_D_ss(r_gov, Y, p):
     return D, D_d, D_f, new_borrowing, debt_service, new_borrowing_f
 
 
-def get_G_ss(Y, total_tax_revenue, agg_pension_outlays, TR, UBI_outlays,
-             new_borrowing, debt_service, p):
-    r'''
+def get_G_ss(
+    Y,
+    total_tax_revenue,
+    agg_pension_outlays,
+    TR,
+    UBI_outlays,
+    I_g,
+    new_borrowing,
+    debt_service,
+    p,
+):
+    r"""
     Calculate the steady-state values of government spending.
 
     .. math::
-            \bar{G} = \bar{Rev} + \bar{D}\bigl[(1 + \bar{g}_n)e^{g_y} - (1 + \bar{r}_{gov})\bigr] -
-            \bar{TR} - \overline{UBI}
+            \bar{G} = \bar{Rev} + \bar{D}\bigl[(1 + \bar{g}_n)e^{g_y} -
+            (1 + \bar{r}_{gov})\bigr] - \bar{I}_g - \bar{TR} - \overline{UBI}
 
     Args:
         Y (scalar): aggregate output
@@ -200,25 +256,29 @@ def get_G_ss(Y, total_tax_revenue, agg_pension_outlays, TR, UBI_outlays,
         agg_pension_outlays (scalar): steady-state pension outlays
         TR (scalar): steady-state transfer spending
         UBI_outlays (scalar): steady-state total UBI outlays
-        new_borrowing (scalar): steady-state amount of new borowing
+        I_g (scalar): steady-state public infrastructure investment
+        new_borrowing (scalar): steady-state amount of new borrowing
         debt_service (scalar): steady-state debt service costs
         p (OG-Core Specifications object): model parameters
 
     Returns:
         G (tuple): steady-state government spending
 
-    '''
+    """
     if p.budget_balance:
         G = p.alpha_G[-1] * Y
     else:
-        G = (total_tax_revenue + new_borrowing -
-             (agg_pension_outlays + TR + debt_service + UBI_outlays))
+        G = (
+            total_tax_revenue
+            + new_borrowing
+            - (agg_pension_outlays + TR + debt_service + UBI_outlays + I_g)
+        )
 
     return G
 
 
 def get_debt_service_f(r_p, D_f):
-    r'''
+    r"""
     Function to compute foreign debt service payments.
 
     .. math::
@@ -229,15 +289,24 @@ def get_debt_service_f(r_p, D_f):
     Returns:
         debt_service_f (array_like): foreign debt service payment amount
 
-    '''
+    """
     debt_service_f = r_p * D_f
 
     return debt_service_f
 
 
-def get_TR(Y, TR, G, total_tax_revenue, agg_pension_outlays, UBI_outlays, p,
-           method):
-    r'''
+def get_TR(
+    Y,
+    TR,
+    G,
+    total_tax_revenue,
+    agg_pension_outlays,
+    UBI_outlays,
+    I_g,
+    p,
+    method,
+):
+    r"""
     Function to compute aggregate transfers.  Note that this excludes
     transfer spending through the public pension system.
 
@@ -258,28 +327,31 @@ def get_TR(Y, TR, G, total_tax_revenue, agg_pension_outlays, UBI_outlays, p,
         agg_pension_outlays (array_like): total government pension
             outlays
         UBI_outlays (array_like): total universal basic income (UBI) outlays
+        I_g (array_like): public infrastructure investement
         p (OG-Core Specifications object): model parameters
         method (str): whether doing SS or TP calculation
 
     Returns:
         new_TR (array_like): new value of aggregate government transfers
 
-    '''
+    """
     if p.budget_balance:
-        new_TR = total_tax_revenue - agg_pension_outlays - G - UBI_outlays
+        new_TR = (
+            total_tax_revenue - agg_pension_outlays - G - UBI_outlays - I_g
+        )
     elif p.baseline_spending:
         new_TR = TR
     else:
-        if method == 'SS':
+        if method == "SS":
             new_TR = p.alpha_T[-1] * Y
         else:  # time path case
-            new_TR = p.alpha_T[:p.T] * Y[:p.T]
+            new_TR = p.alpha_T[: p.T] * Y[: p.T]
 
     return new_TR
 
 
 def get_r_gov(r, p):
-    r'''
+    r"""
     Determine the interest rate on government debt
 
     .. math::
@@ -294,7 +366,57 @@ def get_r_gov(r, p):
         r_gov (array_like): interest rate on government debt over the
             time path or in the steady-state
 
-    '''
+    """
     r_gov = np.maximum(p.r_gov_scale * r - p.r_gov_shift, 0.00)
 
     return r_gov
+
+
+def get_I_g(Y, alpha_I):
+    r"""
+    Find investment in public capital
+
+    .. math::
+        I_{g,t} = \alpha_{I,t}Y_{t}
+
+    Args:
+        Y (array_like): aggregate output
+        alpha_I (array_like): percentage of output invested in public capital
+
+    Returns
+        I_g (array_like): investment in public capital
+    """
+    I_g = alpha_I * Y
+
+    return I_g
+
+
+def get_K_g(K_g0, I_g, p, method):
+    r"""
+    Law of motion for the government capital stock
+
+    .. math::
+        K_{g,t+1} = \frac{(1 - \delta_g)K_{g,t} + I_{g,t}}
+            {(1 + \tilde{g}_{n,t+1})e^{g_y}}
+
+    Args:
+        K_g0 (scalar): initial stock of public capital
+        I_g (array_like): government infrastructure investment
+        p (ParamTools object): model parameters
+        method (str): either 'SS' for steady-state or 'TPI' for transition path
+
+    Returns
+        K_g (array_like): stock of public capital
+
+    """
+    if method == "TPI":
+        K_g = np.zeros(p.T)
+        K_g[0] = K_g0
+        for t in range(p.T - 1):  # TODO: numba jit this
+            growth = (1 + p.g_n[t + 1]) * np.exp(p.g_y)
+            K_g[t + 1] = ((1 - p.delta_g) * K_g[t] + I_g[t]) / growth
+    else:  # SS
+        growth = (1 + p.g_n_ss) * np.exp(p.g_y)
+        K_g = I_g / (growth - (1 - p.delta_g))
+
+    return K_g

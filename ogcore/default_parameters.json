@@ -100,6 +100,25 @@
             }
         }
     },
+    "M": {
+        "title": "Number of different production industries",
+        "description": "Number of different production industries.",
+        "section_1": "Firm Parameters",
+        "section_2": "Model Dimensions",
+        "notes": "",
+        "type": "int",
+        "value": [
+            {
+                "value": 1
+            }
+        ],
+        "validators": {
+            "range": {
+                "min": 1,
+                "max": 50
+            }
+        }
+    },
     "lambdas": {
         "title": "Fraction of population of each labor productivity type",
         "description": "Fraction of population of each labor productivity type.",
@@ -343,16 +362,17 @@
             }
         }
     },
-    "gamma": {
-        "title": "Capital's share of output in firm production function",
-        "description": "Capital's share of output in firm production function.",
-        "section_1": "Firm Parameters",
-        "section_2": "Production Function",
-        "notes": "Histroical value in U.S. is about 0.33, but Elsby, Hobijn, and Sahin (BPEA, 2013) find capital's share is increasing, so default value is above this.",
+    "alpha_c": {
+        "title": "Share parameters for each good in the composite consumption good",
+        "description": "Share parameters for each good in the composite consumption good.",
+        "section_1": "Household Parameters",
+        "section_2": "Behavioral Assumptions",
+        "notes": "",
         "type": "float",
+        "number_dims": 1,
         "value": [
             {
-                "value": 0.35
+                "value": [1.0]
             }
         ],
         "validators": {
@@ -362,16 +382,59 @@
             }
         }
     },
+    "gamma": {
+        "title": "Capital's share of output in firm production function",
+        "description": "Capital's share of output in firm production function.",
+        "section_1": "Firm Parameters",
+        "section_2": "Production Function",
+        "notes": "Historical value in U.S. is about 0.33, but Elsby, Hobijn, and Sahin (BPEA, 2013) find capital's share is increasing, so default value is above this.",
+        "type": "float",
+        "number_dims": 1,
+        "value": [
+            {
+                "value": [0.35]
+            }
+        ],
+        "validators": {
+            "range": {
+                "min": 0.0,
+                "max": 1.0
+            }
+        }
+    },
+    "gamma_g": {
+        "title": "Public capital's share of output in firm production function",
+        "description": "Public capital's share of output in firm production function.",
+        "section_1": "Firm Parameters",
+        "section_2": "Production Function",
+        "notes": "",
+        "type": "float",
+        "number_dims": 1,
+        "value": [
+            {
+                "value": [0.0]
+            }
+        ],
+        "validators": {
+            "when": {
+                "param": "initial_Kg_ratio",
+                "is": {"equal_to": 0},
+                "then": {"range": {"min": 0.0, "max": 0.0}},
+                "otherwise": {"range": {"min": 0.0, "max": 1.0}}
+            }
+        }
+    },
     "epsilon": {
-        "title": "Elasticity of substitution between capital and labor in firm production function",
-        "description": "Elasticity of substitution between capital and labor in firm production function.",
+        "title": "Elasticity of substitution among private capital, public capital, and labor in firm production function",
+        "description": "Elasticity of substitution among private capital, public capital, and labor in firm production function.",
         "section_1": "Firm Parameters",
         "section_2": "Production Function",
         "notes": "If epsilon=1, then production function is Cobb-Douglas.  If epsilon=0, then production function is perfect substitutes.",
         "type": "float",
+        "number_dims": 1,
         "value": [
             {
-                "value": 1.0
+                "value": [1.0]
             }
         ],
         "validators": {
@@ -388,12 +451,12 @@
         "section_2": "Production Function",
         "notes": "",
         "type": "float",
-        "number_dims": 1,
+        "number_dims": 2,
         "value": [
             {
-                "value": [
+                "value": [[
                     1.0
-                ]
+                ]]
             }
         ],
         "validators": {
@@ -413,6 +476,25 @@
         "value": [
             {
                 "value": 0.05
+            }
+        ],
+        "validators": {
+            "range": {
+                "min": 0.0,
+                "max": 1.0
+            }
+        }
+    },
+    "delta_g_annual": {
+        "title": "Annual rate of economic depreciation of public capital",
+        "description": "Annual rate of economic depreciation of public capital.",
+        "section_1": "Government Parameters",
+        "section_2": "",
+        "notes": "",
+        "type": "float",
+        "value": [
+            {
+                "value": 0.02
             }
         ],
         "validators": {
@@ -604,6 +686,28 @@
             }
         }
     },
+    "alpha_I": {
+        "title": "Exogenous fraction of GDP that goes towards government investment in infrastructure (public capital)",
+        "description": "",
+        "section_1": "Fiscal Policy Parameters",
+        "section_2": "Spending",
+        "notes": "",
+        "type": "float",
+        "number_dims": 1,
+        "value": [
+            {
+                "value": [
+                    0.00
+                ]
+            }
+        ],
+        "validators": {
+            "range": {
+                "min": 0.0,
+                "max": 0.3
+            }
+        }
+    },
     "rho_G": {
         "title": "Speed of convergence to a stable government budget deficit for periods [tG1, tG2-1]",
         "description": "Speed of convergence to a stable government budget deficit for periods [tG1, tG2-1].",
@@ -660,6 +764,24 @@
             }
         }
     },
+    "initial_Kg_ratio": {
+        "title": "Government capital (public capital) to GDP ratio in the initial period",
+        "description": "Government capital (aka infrastructure) to GDP ratio in the initial period.",
+        "section_1": "Fiscal Policy Parameters",
+        "notes": "Should be calibrated based on the value of public infrastructure to GDP in the model start year.",
+        "type": "float",
+        "value": [
+            {
+                "value": 0.0
+            }
+        ],
+        "validators": {
+            "range": {
+                "min": 0.0,
+                "max": 50.0
+            }
+        }
+    },
     "r_gov_scale": {
         "title": "Scale parameter to determine government interest rate",
         "description": "Parameter to scale the market interest rate to find interest rate on government debt.",
@@ -703,11 +825,11 @@
         "section_2": "Taxes",
         "notes": "This is the top marginal corporate income tax rate.",
         "type": "float",
-        "number_dims": 1,
+        "number_dims": 2,
         "value": [
             {
                 "value": [
-                    0.21
+                    [0.21]
                 ]
             }
         ],
@@ -733,7 +855,7 @@
         "validators": {
             "range": {
                 "min": 0.0,
-                "max": 0.99
+                "max": 1.0
             }
         }
     },
@@ -753,7 +875,7 @@
         "validators": {
             "range": {
                 "min": 0.0,
-                "max": 0.99
+                "max": 2.0
             }
         }
     },
@@ -764,18 +886,18 @@
         "section_2": "Taxes",
         "notes": "This policy parameter represents the effective consumption tax rate from sales taxes, VATs, and excise taxes.  To capture exemptions of certain goods, this is assumed to vary by age and ability type.  It is thus a SxJ matrix.",
         "type": "float",
-        "number_dims": 1,
+        "number_dims": 2,
         "value": [
             {
                 "value": [
-                    0.0
+                    [0.0]
                 ]
             }
         ],
         "validators": {
             "range": {
                 "min": 0.0,
-                "max": 0.9
+                "max": 5.0
             }
         }
     },
@@ -786,11 +908,11 @@
         "section_2": "Taxes",
         "notes": "Cost-of-Capital-Calculator can help to calibrate this parameter.",
         "type": "float",
-        "number_dims": 1,
+        "number_dims": 2,
         "value": [
             {
                 "value": [
-                    0.027
+                    [0.027]
                 ]
             }
         ],
@@ -2905,8 +3027,8 @@
         }
     },
     "baseline_spending": {
-        "title": "Flag to keep level of government spending and transfers constant between baseline and reform runs",
-        "description": "Flag to keep level of government spending and transfers constant between baseline and reform runs.",
+        "title": "Flag for use in reform simulations to keep level of government spending and transfers constant between baseline and reform runs",
+        "description": "Flag for use in reform simulations to keep level of government spending and transfers constant between baseline and reform runs.",
         "section_1": "Fiscal Policy Parameters",
         "section_2": "Spending",
         "notes": "",
@@ -2983,6 +3105,62 @@
             }
         }
     },
+    "SS_root_method": {
+        "title": "Root finding algorithm for outer loop of the SS solution",
+        "description": "Root finding algorithm for outer loop of the SS solution.",
+        "section_1": "Model Solution Parameters",
+        "notes": "Uses scipy.optimize.root, please see scipy documentation for description of methods. Note that some methods may require more arguments than are in the function calls in SS.py and TPI.py and will therefore break without modifications of the source code.",
+        "type": "str",
+        "value": [
+            {
+                "value": "hybr"
+            }
+        ],
+        "validators": {
+            "choice": {
+                "choices": [
+                    "hybr",
+                    "lm",
+                    "broyden1",
+                    "broyden2",
+                    "anderson",
+                    "linearmixing",
+                    "diagbroyden",
+                    "excitingmixing",
+                    "krylov",
+                    "df-sane"
+                ]
+            }
+        }
+    },
+    "FOC_root_method": {
+        "title": "Root finding algorithm for solving household first order conditions",
+        "description": "Root finding algorithm for solving household first order conditions. ",
+        "section_1": "Model Solution Parameters",
+        "notes": "Uses scipy.optimize.root, please see scipy documentation for description of methods. Note that some methods may require more arguments than are in the function calls in SS.py and TPI.py and will therefore break without modifications of the source code.",
+        "type": "str",
+        "value": [
+            {
+                "value": "hybr"
+            }
+        ],
+        "validators": {
+            "choice": {
+                "choices": [
+                    "hybr",
+                    "lm",
+                    "broyden1",
+                    "broyden2",
+                    "anderson",
+                    "linearmixing",
+                    "diagbroyden",
+                    "excitingmixing",
+                    "krylov",
+                    "df-sane"
+                ]
+            }
+        }
+    },
     "maxiter": {
         "title": "Max iterations for time path iteration",
         "description": "Max iterations for time path iteration.",
@@ -3051,7 +3229,25 @@
         "validators": {
             "range": {
                 "min": 0.01,
-                "max": 0.15
+                "max": 0.25
+            }
+        }
+    },
+    "initial_guess_w_SS": {
+        "title": "Initial guess of w for the SS solution",
+        "description": "Initial guess of w for the SS solution.",
+        "section_1": "Model Solution Parameters",
+        "notes": "",
+        "type": "float",
+        "value": [
+            {
+                "value": 1.1617041226785383
+            }
+        ],
+        "validators": {
+            "range": {
+                "min": 0.01,
+                "max": 5.15
             }
         }
     },
@@ -3305,7 +3501,7 @@
         "validators": {
             "range": {
                 "min": -100.0,
-                "max": 10000.0
+                "max": 20000.0
             }
         }
     },
